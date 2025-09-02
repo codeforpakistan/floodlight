@@ -159,15 +159,27 @@ LOGGING = {
     'handlers': {
         'console': {
             'class': 'logging.StreamHandler',
+            'level': 'WARNING',
         },
     },
     'root': {
         'handlers': ['console'],
+        'level': 'WARNING',
     },
     'loggers': {
         'django': {
             'handlers': ['console'],
-            'level': config('DJANGO_LOG_LEVEL', default='INFO'),
+            'level': config('DJANGO_LOG_LEVEL', default='WARNING'),
+            'propagate': False,
+        },
+        'django.utils.autoreload': {
+            'handlers': [],
+            'level': 'WARNING',
+            'propagate': False,
+        },
+        'django.server': {
+            'handlers': ['console'],
+            'level': 'ERROR',
             'propagate': False,
         },
     },
