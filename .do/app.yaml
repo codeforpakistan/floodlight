@@ -1,0 +1,45 @@
+# DigitalOcean App Platform specification for Floodlight
+name: floodlight
+services:
+- name: web
+  source_dir: /
+  github:
+    repo: codeforpakistan/floodlight
+    branch: master
+  run_command: gunicorn project.wsgi:application --bind 0.0.0.0:$PORT
+  environment_slug: python
+  instance_count: 1
+  instance_size_slug: basic-xxs
+  envs:
+  - key: DEBUG
+    value: "False"
+  - key: DJANGO_SETTINGS_MODULE
+    value: "project.settings"
+  - key: ALLOWED_HOSTS
+    value: ".ondigitalocean.app,floods.pk,www.floods.pk"
+  - key: SECRET_KEY
+    type: SECRET
+    value: CHANGE_THIS_IN_PRODUCTION
+  - key: DATABASE_URL
+    scope: RUN_AND_BUILD_TIME
+    type: SECRET
+  http_port: 8080
+
+databases:
+- name: floodlight-db
+  engine: PG
+  num_nodes: 1
+  size: db-s-dev-database
+  version: "15"
+
+domains:
+- domain: floods.pk
+  type: PRIMARY
+  wildcard: false
+  certificate_id: ""
+- domain: www.floods.pk
+  type: ALIAS
+  wildcard: false
+  certificate_id: ""
+
+static_sites: []
