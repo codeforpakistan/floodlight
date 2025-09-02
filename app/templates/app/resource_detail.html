@@ -1,0 +1,237 @@
+{% extends 'app/base.html' %}
+
+{% block title %}{{ resource.title }} - Resources - Floodlight{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'app:home' %}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'app:resources_list' %}">Resources</a></li>
+            <li class="breadcrumb-item active">{{ resource.title|truncatechars:50 }}</li>
+        </ol>
+    </nav>
+    
+    <div class="row">
+        <!-- Main Content -->
+        <div class="col-lg-8">
+            <!-- Resource Header -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <span class="badge bg-success me-2">{{ resource.need.category.name }}</span>
+                            {% if resource.provider_user %}
+                                <span class="badge bg-primary">
+                                    <i class="bi bi-person me-1"></i>Individual Provider
+                                </span>
+                            {% else %}
+                                <span class="badge bg-info">
+                                    <i class="bi bi-building me-1"></i>Organization Provider
+                                </span>
+                            {% endif %}
+                        </div>
+                        <span class="badge 
+                            {% if resource.status == 'offered' %}bg-success
+                            {% elif resource.status == 'confirmed' %}bg-warning
+                            {% elif resource.status == 'delivered' %}bg-info
+                            {% else %}bg-secondary{% endif %} fs-6">
+                            {{ resource.get_status_display }}
+                        </span>
+                    </div>
+                    
+                    <h1 class="card-title h2 mb-3">Resource for: {{ resource.need.title }}</h1>
+                    <p class="card-text lead">{{ resource.description }}</p>
+                </div>
+            </div>
+            
+            <!-- Resource Details -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-info-circle me-2"></i>Resource Details
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <strong>Related Need:</strong>
+                            <div class="text-muted">
+                                <a href="{% url 'app:need_detail' resource.need.id %}" class="text-decoration-none">
+                                    <i class="bi bi-exclamation-triangle me-1"></i>{{ resource.need.title }}
+                                </a>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <strong>Location:</strong>
+                            <div class="text-muted">
+                                <i class="bi bi-geo-alt me-1"></i>{{ resource.need.location }}
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <strong>Quantity:</strong>
+                            <div class="text-muted">
+                                <i class="bi bi-123 me-1"></i>{{ resource.quantity|default:"Not specified" }}
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <strong>Provided by:</strong>
+                            <div class="text-muted">
+                                {% if resource.provider_user %}
+                                    <i class="bi bi-person me-1"></i>{{ resource.provider_user.get_full_name|default:resource.provider_user.username }}
+                                {% else %}
+                                    <i class="bi bi-building me-1"></i>{{ resource.provider_organization.name }}
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <strong>Added:</strong>
+                            <div class="text-muted">
+                                <i class="bi bi-calendar me-1"></i>{{ resource.created_at|date:"M d, Y" }} at {{ resource.created_at|time:"g:i A" }}
+                            </div>
+                        </div>
+                        {% if resource.updated_at != resource.created_at %}
+                        <div class="col-md-6 mb-3">
+                            <strong>Last Updated:</strong>
+                            <div class="text-muted">
+                                <i class="bi bi-clock-history me-1"></i>{{ resource.updated_at|date:"M d, Y" }} at {{ resource.updated_at|time:"g:i A" }}
+                            </div>
+                        </div>
+                        {% endif %}
+                        <div class="col-md-6 mb-3">
+                            <strong>Status:</strong>
+                            <div class="text-muted">
+                                <span class="badge 
+                                    {% if resource.status == 'offered' %}bg-success
+                                    {% elif resource.status == 'confirmed' %}bg-warning
+                                    {% elif resource.status == 'delivered' %}bg-info
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ resource.get_status_display }}
+                                </span>
+                            </div>
+                        </div>
+                        {% if resource.availability_date %}
+                        <div class="col-md-6 mb-3">
+                            <strong>Available From:</strong>
+                            <div class="text-muted">
+                                <i class="bi bi-calendar-event me-1"></i>{{ resource.availability_date|date:"M d, Y" }}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Contact Information -->
+            {% if resource.contact_info %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-telephone me-2"></i>Contact Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-0">{{ resource.contact_info }}</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Quick Actions -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-lightning me-2"></i>Quick Actions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'app:needs_list' %}?category={{ resource.need.category.id }}" class="btn btn-primary">
+                            <i class="bi bi-exclamation-triangle me-1"></i>Find Related Needs
+                        </a>
+                        <a href="{% url 'app:need_detail' resource.need.id %}" class="btn btn-outline-warning">
+                            <i class="bi bi-eye me-1"></i>View Related Need
+                        </a>
+                        <a href="/admin/app/resource/{{ resource.id }}/change/" class="btn btn-outline-warning" target="_blank">
+                            <i class="bi bi-pencil-square me-1"></i>Edit (Admin)
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Category Info -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-tag me-2"></i>Category
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <h6>{{ resource.need.category.name }}</h6>
+                    <p class="text-muted small mb-0">{{ resource.need.category.description }}</p>
+                </div>
+            </div>
+            
+            <!-- Provider Info -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        {% if resource.provider_user %}
+                            <i class="bi bi-person me-2"></i>Individual Provider
+                        {% else %}
+                            <i class="bi bi-building me-2"></i>Organization Provider
+                        {% endif %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if resource.provider_user %}
+                        <h6>{{ resource.provider_user.get_full_name|default:resource.provider_user.username }}</h6>
+                        <p class="text-muted small">Individual volunteer providing assistance</p>
+                    {% else %}
+                        <h6>{{ resource.provider_organization.name }}</h6>
+                        <p class="text-muted small">{{ resource.provider_organization.description|truncatewords:20 }}</p>
+                        <div class="row text-center">
+                            <div class="col-6">
+                                <small class="text-muted">Type</small>
+                                <div class="fw-bold">{{ resource.provider_organization.get_organization_type_display }}</div>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted">Verified</small>
+                                <div class="fw-bold">
+                                    {% if resource.provider_organization.verified %}
+                                        <span class="text-success">Yes</span>
+                                    {% else %}
+                                        <span class="text-muted">No</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Navigation -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-arrow-left-right me-2"></i>Navigation
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'app:resources_list' %}" class="btn btn-outline-success">
+                            <i class="bi bi-arrow-left me-1"></i>Back to Resources
+                        </a>
+                        <a href="{% url 'app:home' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-house me-1"></i>Home
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

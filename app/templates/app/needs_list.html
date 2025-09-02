@@ -1,0 +1,199 @@
+{% extends 'app/base.html' %}
+
+{% block title %}Needs - Floodlight{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <!-- Filters Sidebar -->
+        <div class="col-lg-3 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-funnel me-2"></i>Filters
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="get" class="mb-3">
+                        <!-- Search -->
+                        <div class="mb-3">
+                            <label for="search" class="form-label">Search</label>
+                            <input type="text" class="form-control" id="search" name="search" 
+                                   value="{{ search_query }}" placeholder="Search needs...">
+                        </div>
+                        
+                        <!-- Type Filter -->
+                        <div class="mb-3">
+                            <label for="type" class="form-label">Entry Type</label>
+                            <select class="form-select" id="type" name="type">
+                                <option value="all" {% if current_type == 'all' %}selected{% endif %}>All Types</option>
+                                <option value="problem" {% if current_type == 'problem' %}selected{% endif %}>
+                                    🚨 Problems ({{ problem_count }})
+                                </option>
+                                <option value="service" {% if current_type == 'service' %}selected{% endif %}>
+                                    🏥 Services ({{ service_count }})
+                                </option>
+                                <option value="information" {% if current_type == 'information' %}selected{% endif %}>
+                                    📊 Information ({{ info_count }})
+                                </option>
+                            </select>
+                        </div>
+                        
+                        <!-- Category Filter -->
+                        <div class="mb-3">
+                            <label for="category" class="form-label">Category</label>
+                            <select class="form-select" id="category" name="category">
+                                <option value="">All Categories</option>
+                                {% for category in categories %}
+                                <option value="{{ category.id }}" 
+                                        {% if current_category == category.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ category.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Disaster Filter -->
+                        <div class="mb-3">
+                            <label for="disaster" class="form-label">Disaster</label>
+                            <select class="form-select" id="disaster" name="disaster">
+                                <option value="">All Disasters</option>
+                                {% for disaster in disasters %}
+                                <option value="{{ disaster.id }}" 
+                                        {% if current_disaster == disaster.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ disaster.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-search me-1"></i>Apply Filters
+                        </button>
+                    </form>
+                    
+                    <a href="{% url 'app:needs_list' %}" class="btn btn-outline-secondary w-100">
+                        <i class="bi bi-arrow-clockwise me-1"></i>Clear Filters
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Needs List -->
+        <div class="col-lg-9">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1>
+                    <i class="bi bi-exclamation-triangle text-warning me-2"></i>
+                    Needs 
+                    <span class="badge bg-secondary">{{ needs.paginator.count }}</span>
+                </h1>
+            </div>
+            
+            {% if needs %}
+                <div class="row">
+                    {% for need in needs %}
+                    <div class="col-md-6 mb-4">
+                        <div class="card card-hover h-100 priority-{{ need.priority }}">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <span class="badge bg-secondary">{{ need.category.name }}</span>
+                                    <div>
+                                        {% if need.verified %}
+                                            <span class="badge verified-badge me-1">
+                                                <i class="bi bi-check-circle me-1"></i>Verified
+                                            </span>
+                                        {% endif %}
+                                        <span class="badge 
+                                            {% if need.priority == 'high' %}bg-danger
+                                            {% elif need.priority == 'medium' %}bg-warning
+                                            {% else %}bg-success{% endif %}">
+                                            {{ need.get_priority_display }}
+                                        </span>
+                                    </div>
+                                </div>
+                                
+                                <h5 class="card-title">{{ need.title }}</h5>
+                                <p class="card-text">{{ need.description|truncatewords:25 }}</p>
+                                
+                                <div class="row text-center mb-3">
+                                    <div class="col-4">
+                                        <small class="text-muted">Status</small>
+                                        <div class="fw-bold text-capitalize">{{ need.status }}</div>
+                                    </div>
+                                    <div class="col-4">
+                                        <small class="text-muted">Disaster</small>
+                                        <div class="fw-bold">{{ need.disaster.name|truncatechars:15 }}</div>
+                                    </div>
+                                    <div class="col-4">
+                                        <small class="text-muted">Created</small>
+                                        <div class="fw-bold">{{ need.created_at|timesince }} ago</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-muted">
+                                        <i class="bi bi-geo-alt me-1"></i>{{ need.location|truncatechars:25 }}
+                                    </small>
+                                    <small class="text-muted">
+                                        <i class="bi bi-person me-1"></i>{{ need.reported_by.get_full_name|default:need.reported_by.username }}
+                                    </small>
+                                </div>
+                            </div>
+                            <div class="card-footer bg-transparent">
+                                <a href="{% url 'app:need_detail' need.id %}" class="btn btn-primary btn-sm">
+                                    <i class="bi bi-eye me-1"></i>View Details
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- Pagination -->
+                {% if needs.has_other_pages %}
+                <nav aria-label="Needs pagination" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        {% if needs.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ needs.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}{% if current_disaster %}&disaster={{ current_disaster }}{% endif %}">
+                                    <i class="bi bi-chevron-left"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+                        
+                        {% for num in needs.paginator.page_range %}
+                            {% if num == needs.number %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                            {% elif num > needs.number|add:'-3' and num < needs.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}{% if current_disaster %}&disaster={{ current_disaster }}{% endif %}">{{ num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if needs.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ needs.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}{% if current_disaster %}&disaster={{ current_disaster }}{% endif %}">
+                                    <i class="bi bi-chevron-right"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-inbox display-4 text-muted mb-3"></i>
+                    <h3 class="text-muted">No Needs Found</h3>
+                    <p class="text-muted">Try adjusting your search criteria or check back later.</p>
+                    <a href="{% url 'app:needs_list' %}" class="btn btn-primary">
+                        <i class="bi bi-arrow-clockwise me-1"></i>Reset Filters
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

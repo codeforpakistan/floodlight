@@ -1,0 +1,92 @@
+{% extends 'app/base.html' %}
+
+{% block title %}Disasters - Floodlight{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>
+            <i class="bi bi-cloud-rain text-danger me-2"></i>
+            Disasters 
+            <span class="badge bg-danger">{{ disasters|length }}</span>
+        </h1>
+    </div>
+    
+    {% if disasters %}
+        <div class="row">
+            {% for disaster in disasters %}
+            <div class="col-lg-6 mb-4">
+                <div class="card card-hover h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <h5 class="card-title mb-0">{{ disaster.name }}</h5>
+                            <span class="badge 
+                                {% if not disaster.end_date %}bg-danger
+                                {% else %}bg-secondary{% endif %} fs-6">
+                                {% if not disaster.end_date %}Active{% else %}Inactive{% endif %}
+                            </span>
+                        </div>
+                        
+                        <p class="card-text">{{ disaster.description|truncatewords:30 }}</p>
+                        
+                        <div class="row text-center mb-3">
+                            <div class="col-4">
+                                <small class="text-muted">Start Date</small>
+                                <div class="fw-bold">{{ disaster.start_date|date:"M d, Y" }}</div>
+                            </div>
+                            <div class="col-4">
+                                <small class="text-muted">Severity</small>
+                                <div class="fw-bold text-capitalize">{{ disaster.severity }}</div>
+                            </div>
+                            <div class="col-4">
+                                <small class="text-muted">Status</small>
+                                <div class="fw-bold">
+                                    {% if not disaster.end_date %}
+                                        <span class="text-danger">Ongoing</span>
+                                    {% else %}
+                                        <span class="text-secondary">Ended</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <small class="text-muted">Affected Areas:</small>
+                            <div class="text-muted">
+                                <i class="bi bi-geo-alt me-1"></i>{{ disaster.affected_areas }}
+                            </div>
+                        </div>
+                        
+                        {% if disaster.end_date %}
+                        <div class="mb-3">
+                            <small class="text-muted">End Date:</small>
+                            <div class="text-muted">
+                                <i class="bi bi-calendar-check me-1"></i>{{ disaster.end_date|date:"M d, Y" }}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="card-footer bg-transparent">
+                        <a href="{% url 'app:disaster_detail' disaster.slug %}" class="btn btn-primary btn-sm">
+                            <i class="bi bi-eye me-1"></i>View Details
+                        </a>
+                        <a href="{% url 'app:needs_list' %}?disaster={{ disaster.id }}" class="btn btn-outline-warning btn-sm">
+                            <i class="bi bi-exclamation-triangle me-1"></i>Related Needs
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-cloud display-4 text-muted mb-3"></i>
+            <h3 class="text-muted">No Disasters Found</h3>
+            <p class="text-muted">No disasters have been recorded yet.</p>
+            <a href="{% url 'app:home' %}" class="btn btn-primary">
+                <i class="bi bi-house me-1"></i>Back to Home
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

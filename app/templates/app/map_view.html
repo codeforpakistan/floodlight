@@ -1,0 +1,365 @@
+{% extends 'app/base.html' %}
+
+{% block title %}Interactive Map - Floodlight{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+    #map {
+        height: 70vh;
+        width: 100%;
+        border-radius: 8px;
+        border: 1px solid #dee2e6;
+    }
+    .map-controls {
+        background: white;
+        padding: 1rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 1rem;
+    }
+    .legend {
+        background: white;
+        padding: 1rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .legend-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 0.5rem;
+    }
+    .legend-icon {
+        width: 20px;
+        height: 20px;
+        margin-right: 0.5rem;
+        border-radius: 50%;
+    }
+    .popup-content {
+        max-width: 300px;
+    }
+    .popup-title {
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+        color: #333;
+    }
+    .popup-category {
+        display: inline-block;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        margin-bottom: 0.5rem;
+    }
+    .popup-description {
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+        color: #666;
+    }
+    .popup-meta {
+        font-size: 0.8rem;
+        color: #999;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-lg-9">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2>🗺️ Interactive Map</h2>
+                <div class="btn-group" role="group">
+                    <a href="{% url 'app:problems_list' %}" class="btn btn-outline-danger">
+                        <i class="bi bi-list me-1"></i>Problems List
+                    </a>
+                    <a href="{% url 'app:services_list' %}" class="btn btn-outline-success">
+                        <i class="bi bi-list me-1"></i>Services List
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Map Controls -->
+            <div class="map-controls">
+                <form method="get" class="row g-3">
+                    <div class="col-md-4">
+                        <label for="type" class="form-label">Entry Type</label>
+                        <select name="type" id="type" class="form-select">
+                            <option value="all" {% if current_type == 'all' %}selected{% endif %}>All Types</option>
+                            <option value="problem" {% if current_type == 'problem' %}selected{% endif %}>
+                                🚨 Problems ({{ problem_count }})
+                            </option>
+                            <option value="service" {% if current_type == 'service' %}selected{% endif %}>
+                                🏥 Services ({{ service_count }})
+                            </option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="disaster" class="form-label">Disaster</label>
+                        <select name="disaster" id="disaster" class="form-select">
+                            <option value="">All Disasters</option>
+                            {% for disaster in disasters %}
+                            <option value="{{ disaster.id }}" 
+                                    {% if current_disaster == disaster.id|stringformat:'s' %}selected{% endif %}>
+                                {{ disaster.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary me-2">Update Map</button>
+                        <button type="button" class="btn btn-outline-secondary" onclick="refreshMap()">
+                            <i class="bi bi-arrow-clockwise"></i> Refresh
+                        </button>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Map Container -->
+            <div id="map"></div>
+        </div>
+        
+        <div class="col-lg-3">
+            <!-- Legend -->
+            <div class="legend">
+                <h5 class="mb-3">
+                    <i class="bi bi-list me-2"></i>Map Legend
+                </h5>
+                
+                <div class="legend-item">
+                    <div class="legend-icon" style="background-color: #dc3545;"></div>
+                    <span>Problems & Issues</span>
+                </div>
+                
+                <div class="legend-item">
+                    <div class="legend-icon" style="background-color: #28a745;"></div>
+                    <span>Services & Solutions</span>
+                </div>
+                
+                <div class="legend-item">
+                    <div class="legend-icon" style="background-color: #17a2b8;"></div>
+                    <span>Information & Data</span>
+                </div>
+                
+                <hr>
+                
+                <h6>Priority Levels</h6>
+                <div class="legend-item">
+                    <div class="legend-icon" style="background-color: #dc3545; border: 3px solid #721c24;"></div>
+                    <span>Urgent</span>
+                </div>
+                
+                <div class="legend-item">
+                    <div class="legend-icon" style="background-color: #fd7e14; border: 2px solid #ad5502;"></div>
+                    <span>High Priority</span>
+                </div>
+                
+                <div class="legend-item">
+                    <div class="legend-icon" style="background-color: #ffc107;"></div>
+                    <span>Medium Priority</span>
+                </div>
+                
+                <div class="legend-item">
+                    <div class="legend-icon" style="background-color: #28a745;"></div>
+                    <span>Low Priority</span>
+                </div>
+            </div>
+            
+            <!-- Map Stats -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="bi bi-bar-chart me-2"></i>Map Statistics
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6 mb-2">
+                            <div class="text-danger">
+                                <h4>{{ problem_count }}</h4>
+                                <small>Problems</small>
+                            </div>
+                        </div>
+                        <div class="col-6 mb-2">
+                            <div class="text-success">
+                                <h4>{{ service_count }}</h4>
+                                <small>Services</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Quick Links -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="bi bi-link me-2"></i>Quick Links
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'app:problems_list' %}" class="btn btn-outline-danger btn-sm">
+                            <i class="bi bi-list me-1"></i>Problems List
+                        </a>
+                        <a href="{% url 'app:services_list' %}" class="btn btn-outline-success btn-sm">
+                            <i class="bi bi-list me-1"></i>Services List
+                        </a>
+                        <a href="{% url 'app:disasters_list' %}" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-cloud-rain me-1"></i>All Disasters
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    // Initialize map centered on Pakistan
+    const map = L.map('map').setView([30.3753, 69.3451], 6);
+    
+    // Add tile layer
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+    
+    // Marker groups for different categories
+    const problemMarkers = L.layerGroup().addTo(map);
+    const serviceMarkers = L.layerGroup().addTo(map);
+    const infoMarkers = L.layerGroup().addTo(map);
+    
+    // Function to get marker color based on category and priority
+    function getMarkerColor(categoryType, priority) {
+        if (categoryType === 'problem') {
+            switch (priority) {
+                case 'urgent': return '#721c24';
+                case 'high': return '#dc3545';
+                case 'medium': return '#fd7e14';
+                case 'low': return '#ffc107';
+                default: return '#dc3545';
+            }
+        } else if (categoryType === 'service') {
+            return '#28a745';
+        } else {
+            return '#17a2b8';
+        }
+    }
+    
+    // Function to get marker size based on priority
+    function getMarkerSize(priority) {
+        switch (priority) {
+            case 'urgent': return 12;
+            case 'high': return 10;
+            case 'medium': return 8;
+            case 'low': return 6;
+            default: return 8;
+        }
+    }
+    
+    // Function to create popup content
+    function createPopupContent(feature) {
+        const props = feature.properties;
+        const categoryClass = props.category_type === 'problem' ? 'bg-danger' : 
+                             props.category_type === 'service' ? 'bg-success' : 'bg-info';
+        
+        let priorityBadge = '';
+        if (props.category_type === 'problem') {
+            const priorityClass = props.priority === 'urgent' ? 'bg-danger' :
+                                 props.priority === 'high' ? 'bg-warning' :
+                                 props.priority === 'medium' ? 'bg-info' : 'bg-secondary';
+            priorityBadge = `<span class="badge ${priorityClass} ms-1">${props.priority.toUpperCase()}</span>`;
+        }
+        
+        const verifiedBadge = props.is_verified ? 
+            '<span class="badge bg-success ms-1"><i class="bi bi-check-circle"></i> Verified</span>' : '';
+        
+        return `
+            <div class="popup-content">
+                <div class="popup-title">${props.title}</div>
+                <div class="popup-category ${categoryClass} text-white">${props.category}</div>
+                ${priorityBadge}
+                ${verifiedBadge}
+                <div class="popup-description">${props.description}</div>
+                <div class="popup-meta">
+                    <div><i class="bi bi-geo-alt"></i> ${props.location}</div>
+                    <div><i class="bi bi-calendar"></i> ${new Date(props.created_at).toLocaleDateString()}</div>
+                    ${props.contact_person ? `<div><i class="bi bi-person"></i> ${props.contact_person}</div>` : ''}
+                    ${props.contact_phone ? `<div><i class="bi bi-phone"></i> ${props.contact_phone}</div>` : ''}
+                </div>
+                <div class="mt-2">
+                    <a href="${props.url}" class="btn btn-primary btn-sm">View Details</a>
+                </div>
+            </div>
+        `;
+    }
+    
+    // Function to load map data
+    function loadMapData() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const apiUrl = '{% url "app:map_data_api" %}?' + urlParams.toString();
+        
+        fetch(apiUrl)
+            .then(response => response.json())
+            .then(data => {
+                // Clear existing markers
+                problemMarkers.clearLayers();
+                serviceMarkers.clearLayers();
+                infoMarkers.clearLayers();
+                
+                // Add markers for each feature
+                data.features.forEach(feature => {
+                    const coords = feature.geometry.coordinates;
+                    const props = feature.properties;
+                    
+                    const marker = L.circleMarker([coords[1], coords[0]], {
+                        radius: getMarkerSize(props.priority),
+                        fillColor: getMarkerColor(props.category_type, props.priority),
+                        color: '#fff',
+                        weight: 2,
+                        opacity: 1,
+                        fillOpacity: 0.8
+                    });
+                    
+                    marker.bindPopup(createPopupContent(feature));
+                    
+                    // Add to appropriate layer group
+                    if (props.category_type === 'problem') {
+                        problemMarkers.addLayer(marker);
+                    } else if (props.category_type === 'service') {
+                        serviceMarkers.addLayer(marker);
+                    } else {
+                        infoMarkers.addLayer(marker);
+                    }
+                });
+                
+                // Fit map to show all markers if any exist
+                const allMarkers = L.featureGroup([problemMarkers, serviceMarkers, infoMarkers]);
+                if (allMarkers.getLayers().length > 0) {
+                    map.fitBounds(allMarkers.getBounds(), { padding: [20, 20] });
+                }
+            })
+            .catch(error => {
+                console.error('Error loading map data:', error);
+            });
+    }
+    
+    // Function to refresh map
+    function refreshMap() {
+        loadMapData();
+    }
+    
+    // Load initial data
+    loadMapData();
+    
+    // Reload when form is submitted
+    document.querySelector('form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        const params = new URLSearchParams(formData);
+        window.location.search = params.toString();
+    });
+</script>
+{% endblock %}

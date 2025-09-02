@@ -1,0 +1,177 @@
+{% extends 'app/base.html' %}
+
+{% block title %}Problems & Issues{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h2">🚨 Problems & Issues</h1>
+                <div>
+                    <a href="{% url 'app:map_view' %}?type=problem" class="btn btn-outline-primary me-2">
+                        <i class="bi bi-map me-1"></i>View on Map
+                    </a>
+                    <span class="badge bg-danger fs-6">{{ problems.paginator.count }} open issues</span>
+                </div>
+            </div>
+            
+            <!-- Filters -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-3">
+                            <label for="category" class="form-label">Category</label>
+                            <select name="category" id="category" class="form-select">
+                                <option value="">All Categories</option>
+                                {% for category in categories %}
+                                <option value="{{ category.id }}" 
+                                        {% if current_category == category.id|stringformat:'s' %}selected{% endif %}>
+                                    {{ category.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="disaster" class="form-label">Disaster</label>
+                            <select name="disaster" id="disaster" class="form-select">
+                                <option value="">All Disasters</option>
+                                {% for disaster in disasters %}
+                                <option value="{{ disaster.id }}" 
+                                        {% if current_disaster == disaster.id|stringformat:'s' %}selected{% endif %}>
+                                    {{ disaster.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="priority" class="form-label">Priority</label>
+                            <select name="priority" id="priority" class="form-select">
+                                <option value="">All Priorities</option>
+                                {% for value, label in priority_choices %}
+                                <option value="{{ value }}" 
+                                        {% if current_priority == value %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="search" class="form-label">Search</label>
+                            <div class="input-group">
+                                <input type="text" name="search" id="search" class="form-control" 
+                                       placeholder="Search problems..." value="{{ search_query }}">
+                                <button type="submit" class="btn btn-primary">Search</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Problems Grid -->
+            <div class="row">
+                {% for problem in problems %}
+                <div class="col-lg-6 col-xl-4 mb-4">
+                    <div class="card h-100 border-left-{{ problem.priority }}">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="badge bg-danger">{{ problem.category.name }}</span>
+                                {% if problem.priority == 'urgent' %}
+                                <span class="badge bg-danger ms-1">URGENT</span>
+                                {% elif problem.priority == 'high' %}
+                                <span class="badge bg-warning ms-1">HIGH</span>
+                                {% endif %}
+                            </div>
+                            {% if problem.is_verified %}
+                            <span class="text-success" title="Verified">
+                                <i class="fas fa-check-circle"></i>
+                            </span>
+                            {% endif %}
+                        </div>
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <a href="{% url 'app:need_detail' problem.id %}" class="text-decoration-none">
+                                    {{ problem.title }}
+                                </a>
+                            </h5>
+                            <p class="card-text text-muted small">
+                                {{ problem.description|truncatewords:15 }}
+                            </p>
+                            {% if problem.location %}
+                            <p class="card-text">
+                                <small class="text-muted">
+                                    <i class="fas fa-map-marker-alt"></i> {{ problem.location }}
+                                </small>
+                            </p>
+                            {% endif %}
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">
+                                    <a href="{% url 'app:disaster_detail' problem.disaster.slug %}" class="text-decoration-none">
+                                        {{ problem.disaster.name }}
+                                    </a>
+                                </small>
+                                <small class="text-muted">{{ problem.created_at|timesince }} ago</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-12">
+                    <div class="text-center py-5">
+                        <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                        <h4>No problems found</h4>
+                        <p class="text-muted">Try adjusting your search criteria.</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Pagination -->
+            {% if problems.has_other_pages %}
+            <nav aria-label="Problems pagination">
+                <ul class="pagination justify-content-center">
+                    {% if problems.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ problems.previous_page_number }}&{{ request.GET.urlencode }}">Previous</a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for num in problems.paginator.page_range %}
+                    {% if problems.number == num %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ num }}</span>
+                    </li>
+                    {% elif num > problems.number|add:'-3' and num < problems.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ num }}&{{ request.GET.urlencode }}">{{ num }}</a>
+                    </li>
+                    {% endif %}
+                    {% endfor %}
+                    
+                    {% if problems.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ problems.next_page_number }}&{{ request.GET.urlencode }}">Next</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.border-left-urgent {
+    border-left: 4px solid #dc3545 !important;
+}
+.border-left-high {
+    border-left: 4px solid #fd7e14 !important;
+}
+.border-left-medium {
+    border-left: 4px solid #ffc107 !important;
+}
+.border-left-low {
+    border-left: 4px solid #28a745 !important;
+}
+</style>
+{% endblock %}

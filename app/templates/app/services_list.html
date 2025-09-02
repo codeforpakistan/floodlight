@@ -1,0 +1,184 @@
+{% extends 'app/base.html' %}
+
+{% block title %}Services & Solutions{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h2">🏥 Services & Solutions</h1>
+                <div>
+                    <a href="{% url 'app:map_view' %}?type=service" class="btn btn-outline-primary me-2">
+                        <i class="bi bi-map me-1"></i>View on Map
+                    </a>
+                    <span class="badge bg-success fs-6">{{ services.paginator.count }} available services</span>
+                </div>
+            </div>
+            
+            <!-- Filters -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-4">
+                            <label for="category" class="form-label">Service Type</label>
+                            <select name="category" id="category" class="form-select">
+                                <option value="">All Service Types</option>
+                                {% for category in categories %}
+                                <option value="{{ category.id }}" 
+                                        {% if current_category == category.id|stringformat:'s' %}selected{% endif %}>
+                                    {{ category.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="disaster" class="form-label">Disaster</label>
+                            <select name="disaster" id="disaster" class="form-select">
+                                <option value="">All Disasters</option>
+                                {% for disaster in disasters %}
+                                <option value="{{ disaster.id }}" 
+                                        {% if current_disaster == disaster.id|stringformat:'s' %}selected{% endif %}>
+                                    {{ disaster.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="search" class="form-label">Search</label>
+                            <div class="input-group">
+                                <input type="text" name="search" id="search" class="form-control" 
+                                       placeholder="Search services..." value="{{ search_query }}">
+                                <button type="submit" class="btn btn-primary">Search</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Services Grid -->
+            <div class="row">
+                {% for service in services %}
+                <div class="col-lg-6 col-xl-4 mb-4">
+                    <div class="card h-100 border-success">
+                        <div class="card-header d-flex justify-content-between align-items-center bg-light-success">
+                            <div>
+                                <span class="badge bg-success">{{ service.category.name }}</span>
+                            </div>
+                            {% if service.is_verified %}
+                            <span class="text-success" title="Verified">
+                                <i class="fas fa-check-circle"></i>
+                            </span>
+                            {% endif %}
+                        </div>
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <a href="{% url 'app:need_detail' service.id %}" class="text-decoration-none">
+                                    {{ service.title }}
+                                </a>
+                            </h5>
+                            <p class="card-text text-muted small">
+                                {{ service.description|truncatewords:15 }}
+                            </p>
+                            
+                            {% if service.contact_person %}
+                            <p class="card-text">
+                                <small class="text-muted">
+                                    <i class="fas fa-user"></i> {{ service.contact_person }}
+                                </small>
+                            </p>
+                            {% endif %}
+                            
+                            {% if service.contact_phone %}
+                            <p class="card-text">
+                                <small class="text-muted">
+                                    <i class="fas fa-phone"></i> {{ service.contact_phone }}
+                                </small>
+                            </p>
+                            {% endif %}
+                            
+                            {% if service.location %}
+                            <p class="card-text">
+                                <small class="text-muted">
+                                    <i class="fas fa-map-marker-alt"></i> {{ service.location }}
+                                </small>
+                            </p>
+                            {% endif %}
+                            
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">
+                                    <a href="{% url 'app:disaster_detail' service.disaster.slug %}" class="text-decoration-none">
+                                        {{ service.disaster.name }}
+                                    </a>
+                                </small>
+                                <small class="text-muted">{{ service.created_at|timesince }} ago</small>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-transparent">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="badge bg-{{ service.status|yesno:'success,warning,danger' }}">
+                                    {{ service.get_status_display }}
+                                </span>
+                                {% if service.reported_by %}
+                                <small class="text-muted">
+                                    By {{ service.reported_by.get_full_name|default:service.reported_by.username }}
+                                </small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-12">
+                    <div class="text-center py-5">
+                        <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                        <h4>No services found</h4>
+                        <p class="text-muted">Try adjusting your search criteria.</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Pagination -->
+            {% if services.has_other_pages %}
+            <nav aria-label="Services pagination">
+                <ul class="pagination justify-content-center">
+                    {% if services.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ services.previous_page_number }}&{{ request.GET.urlencode }}">Previous</a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for num in services.paginator.page_range %}
+                    {% if services.number == num %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ num }}</span>
+                    </li>
+                    {% elif num > services.number|add:'-3' and num < services.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ num }}&{{ request.GET.urlencode }}">{{ num }}</a>
+                    </li>
+                    {% endif %}
+                    {% endfor %}
+                    
+                    {% if services.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ services.next_page_number }}&{{ request.GET.urlencode }}">Next</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.bg-light-success {
+    background-color: rgba(40, 167, 69, 0.1) !important;
+}
+.border-success {
+    border-left: 4px solid #28a745 !important;
+}
+</style>
+{% endblock %}

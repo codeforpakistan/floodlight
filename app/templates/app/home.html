@@ -1,0 +1,258 @@
+{% extends 'app/base.html' %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <h1 class="display-4 fw-bold mb-3">Floodlight</h1>
+                <p class="lead mb-4">
+                    Disaster Response Crowdsourcing Platform for Pakistan. 
+                    Connect communities, coordinate relief efforts, and save lives during emergencies.
+                </p>
+                <div class="d-flex gap-3">
+                    <a href="{% url 'app:problems_list' %}" class="btn btn-light btn-lg">
+                        <i class="bi bi-exclamation-triangle me-2"></i>View Problems
+                    </a>
+                    <a href="{% url 'app:services_list' %}" class="btn btn-outline-light btn-lg">
+                        <i class="bi bi-heart me-2"></i>Find Services
+                    </a>
+                </div>
+                <div class="mt-3">
+                    <a href="{% url 'app:map_view' %}" class="btn btn-outline-light btn-lg">
+                        <i class="bi bi-map me-2"></i>Interactive Map
+                    </a>
+                </div>
+            </div>
+            <div class="col-lg-6 text-center">
+                <div class="row g-3">
+                    <div class="col-6">
+                        <div class="bg-white bg-opacity-10 rounded-3 p-3">
+                            <h3 class="h2 mb-1">{{ total_problems }}</h3>
+                            <small>Open Problems</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="bg-white bg-opacity-10 rounded-3 p-3">
+                            <h3 class="h2 mb-1">{{ total_services }}</h3>
+                            <small>Available Services</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Active Disasters -->
+{% if active_disasters %}
+<section class="py-5">
+    <div class="container">
+        <h2 class="mb-4">
+            <i class="bi bi-cloud-rain text-danger me-2"></i>
+            Active Disasters
+        </h2>
+        <div class="row">
+            {% for disaster in active_disasters %}
+            <div class="col-md-4 mb-3">
+                <div class="card card-hover h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ disaster.name }}</h5>
+                        <p class="card-text text-muted">{{ disaster.description|truncatewords:15 }}</p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">
+                                <i class="bi bi-geo-alt me-1"></i>{{ disaster.affected_areas }}
+                            </small>
+                            <span class="badge bg-danger">Active</span>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-transparent">
+                        <a href="{% url 'app:disaster_detail' disaster.slug %}" class="btn btn-outline-primary btn-sm">
+                            View Details
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- Recent Problems -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="bi bi-exclamation-triangle text-danger me-2"></i>
+                Recent Problems
+            </h2>
+            <a href="{% url 'app:problems_list' %}" class="btn btn-outline-danger">
+                View All Problems <i class="bi bi-arrow-right ms-1"></i>
+            </a>
+        </div>
+        
+        <div class="row">
+            {% for problem in recent_problems %}
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="card card-hover h-100 border-danger">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <span class="badge bg-danger">{{ problem.category.name }}</span>
+                            {% if problem.priority == 'urgent' %}
+                                <span class="badge bg-danger">URGENT</span>
+                            {% elif problem.priority == 'high' %}
+                                <span class="badge bg-warning">HIGH</span>
+                            {% endif %}
+                        </div>
+                        
+                        <h6 class="card-title">{{ problem.title|truncatechars:50 }}</h6>
+                        <p class="card-text small">{{ problem.description|truncatewords:10 }}</p>
+                        
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">
+                                <i class="bi bi-geo-alt me-1"></i>{{ problem.location|truncatechars:15 }}
+                            </small>
+                            <small class="text-muted">
+                                {{ problem.created_at|timesince }} ago
+                            </small>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-transparent">
+                        <a href="{% url 'app:need_detail' problem.id %}" class="btn btn-danger btn-sm w-100">
+                            View Problem
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12">
+                <div class="text-center py-3">
+                    <i class="bi bi-check-circle display-4 text-success mb-3"></i>
+                    <p class="text-muted">No active problems at the moment.</p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- Recent Services -->
+<section class="py-5">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="bi bi-heart text-success me-2"></i>
+                Available Services
+            </h2>
+            <a href="{% url 'app:services_list' %}" class="btn btn-outline-success">
+                View All Services <i class="bi bi-arrow-right ms-1"></i>
+            </a>
+        </div>
+        
+        <div class="row">
+            {% for service in recent_services %}
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="card card-hover h-100 border-success">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <span class="badge bg-success">{{ service.category.name }}</span>
+                            {% if service.is_verified %}
+                                <span class="badge bg-info">
+                                    <i class="bi bi-check-circle me-1"></i>Verified
+                                </span>
+                            {% endif %}
+                        </div>
+                        
+                        <h6 class="card-title">{{ service.title|truncatechars:50 }}</h6>
+                        <p class="card-text small">{{ service.description|truncatewords:10 }}</p>
+                        
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">
+                                <i class="bi bi-geo-alt me-1"></i>{{ service.location|truncatechars:15 }}
+                            </small>
+                            <small class="text-muted">
+                                {{ service.created_at|timesince }} ago
+                            </small>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-transparent">
+                        <a href="{% url 'app:need_detail' service.id %}" class="btn btn-success btn-sm w-100">
+                            View Service
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12">
+                <div class="text-center py-3">
+                    <i class="bi bi-info-circle display-4 text-muted mb-3"></i>
+                    <p class="text-muted">No services available at the moment.</p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- Recent Resources -->
+<section class="py-5">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="bi bi-box-seam text-success me-2"></i>
+                Available Resources
+            </h2>
+            <a href="{% url 'app:resources_list' %}" class="btn btn-outline-success">
+                View All Resources <i class="bi bi-arrow-right ms-1"></i>
+            </a>
+        </div>
+        
+        <div class="row">
+            {% for resource in recent_resources %}
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="card card-hover h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <span class="badge bg-success">{{ resource.need.category.name }}</span>
+                            <span class="badge bg-primary">
+                                {% if resource.provider_user %}
+                                    <i class="bi bi-person me-1"></i>Individual
+                                {% else %}
+                                    <i class="bi bi-building me-1"></i>Organization
+                                {% endif %}
+                            </span>
+                        </div>
+                        
+                        <h5 class="card-title">Resource for: {{ resource.need.title|truncatechars:40 }}</h5>
+                        <p class="card-text">{{ resource.description|truncatewords:20 }}</p>
+                        
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">
+                                <i class="bi bi-geo-alt me-1"></i>{{ resource.need.location|truncatechars:20 }}
+                            </small>
+                            <small class="text-muted">
+                                {{ resource.created_at|timesince }} ago
+                            </small>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-transparent">
+                        <a href="{% url 'app:resource_detail' resource.id %}" class="btn btn-success btn-sm">
+                            View Details
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12">
+                <div class="text-center py-5">
+                    <i class="bi bi-inbox display-4 text-muted mb-3"></i>
+                    <p class="text-muted">No resources available.</p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endblock %}
