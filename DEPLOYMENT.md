@@ -49,9 +49,11 @@ DJANGO_SUPERUSER_PASSWORD=secure-admin-password
 
 ### 4. Database Configuration
 
-1. Add PostgreSQL database to your app
-2. DigitalOcean will automatically set `DATABASE_URL`
-3. Database name: `floodlight-db`
+This deployment uses SQLite for simplicity:
+- No external database required
+- Data stored in application filesystem
+- Suitable for small to medium deployments
+- Easy backup and migration
 
 ### 5. Domain Setup
 
@@ -92,7 +94,6 @@ python manage.py seed_data
 |----------|-------------|---------|
 | `DEBUG` | Django debug mode | `False` |
 | `SECRET_KEY` | Django secret key | `your-secret-key` |
-| `DATABASE_URL` | Database connection | Auto-set by DigitalOcean |
 | `ALLOWED_HOSTS` | Allowed host names | `.ondigitalocean.app,floods.pk` |
 | `DJANGO_SUPERUSER_USERNAME` | Admin username | `admin` |
 | `DJANGO_SUPERUSER_EMAIL` | Admin email | `admin@floods.pk` |
@@ -117,6 +118,7 @@ python manage.py seed_data
 - Start with Basic ($5/month) instance
 - Scale up to Professional ($12/month) for higher traffic
 - Add more instances for horizontal scaling
+- **Cost Advantage**: Using SQLite eliminates database costs (~$15/month savings)
 
 ## Troubleshooting
 

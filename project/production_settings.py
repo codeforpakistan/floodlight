@@ -26,12 +26,19 @@ CSRF_TRUSTED_ORIGINS = [
     'https://www.floods.pk',
 ]
 
-# Database Configuration for Production
-DATABASES = {
-    'default': dj_database_url.parse(
-        config('DATABASE_URL', default='sqlite:///db.sqlite3')
-    )
-}
+# Database Configuration - Using SQLite for simplicity
+if config('DATABASE_URL', default=None):
+    DATABASES = {
+        'default': dj_database_url.parse(config('DATABASE_URL'))
+    }
+else:
+    # Use SQLite for production (simple deployment)
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 # Static Files Configuration
 STATIC_URL = '/static/'
