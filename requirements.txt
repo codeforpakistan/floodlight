@@ -4,7 +4,7 @@ asgiref==3.9.1
     # via django
 dj-database-url==3.0.1
     # via floodlight (pyproject.toml)
-django==5.2.5
+django==5.2.11
     # via
     #   floodlight (pyproject.toml)
     #   dj-database-url
